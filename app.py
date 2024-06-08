@@ -1,82 +1,61 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import python_minifier
 
 app = Flask(__name__)
 CORS(app)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://glad432.github.io",
-                "http://localhost:3000",
-                "https://python-minifier.vercel.app",
-            ]
-        }
-    },
-)
 
-MAX_INPUT_SIZE_KB = 310
-
+MAX_INPUT_SIZE_KB = 420
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         input_code = request.form.get("inputCode", "")
 
-    if len(input_code.encode("utf-8")) > MAX_INPUT_SIZE_KB * 1024:
-        return (
-            jsonify({"error": f"exceeds the maximum limit of {MAX_INPUT_SIZE_KB} KB"}),
-            400,
-        )
+        if len(input_code.encode("utf-8")) > MAX_INPUT_SIZE_KB * 1024:
+            return jsonify({"error": f"Exceeds the maximum limit of {MAX_INPUT_SIZE_KB} KB"}), 400
 
         options = extract_options(request.form)
         try:
             minified_code = minify_code(input_code, options)
             return jsonify({"minified_code": minified_code})
         except Exception as e:
-            return jsonify({"error": "Minification failed, check the py code"}), 500
+            return jsonify({"error": str(e)}), 500
 
     elif request.method == "GET":
-        return render_template("out.html")
-
-
-def extract_options(form_data):
-    options = {}
-    for key, value in form_data.items():
-        if key != "inputCode":
-            options[key] = value == "true"
-    return options
-
+        return render_template("index.html")
 
 @app.route("/minify", methods=["POST"])
 def minify_post():
-    input_code = request.form.get("inputCode", "")
+    input_code = request.data.decode("utf-8")
+    query_params = request.args
+    options = extract_options(query_params)
+    
+    if len(input_code) > MAX_INPUT_SIZE_KB * 1024:
+        return jsonify({"error": f"Size exceeds the maximum limit of {MAX_INPUT_SIZE_KB} KB"}), 400
 
-    if len(input_code.encode("utf-8")) > MAX_INPUT_SIZE_KB * 1024:
-        return (
-            jsonify(
-                {"error": f"size exceeds the maximum limit of {MAX_INPUT_SIZE_KB} KB"}
-            ),
-            400,
-        )
-
-    options = extract_options(request.form)
     try:
         minified_code = minify_code(input_code, options)
         return jsonify({"minified_code": minified_code})
     except Exception as e:
-        return jsonify({"error": "Minification failed, check the py code"}), 500
+        return jsonify({"error": str(e)}), 500
 
+def extract_options(params):
+    options = {}
+    for key, value in params.items():
+        if key != "inputCode":
+            if key in ['preserve_globals', 'preserve_locals']:
+                options[key] = value.split(',')
+            else:
+                options[key] = value == "true"
+    return options
 
 def minify_code(input_code, options):
     try:
         minified_code = python_minifier.minify(input_code, **options)
         return minified_code
     except Exception as e:
-        raise Exception("Minification failed, check the py code")
-
+        raise Exception("Minification failed, check the Python code")
 
 if __name__ == "__main__":
     app.run(debug=False)
