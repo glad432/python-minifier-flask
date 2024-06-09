@@ -23,7 +23,7 @@ def index():
             return jsonify({"error": str(e)}), 500
 
     elif request.method == "GET":
-        return render_template("index.html")
+        return render_template("out.html")
 
 @app.route("/minify", methods=["POST"])
 def minify_post():
