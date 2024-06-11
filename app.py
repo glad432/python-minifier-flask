@@ -7,7 +7,7 @@ cors = CORS(app, resources={r"/*": {"origins": ["https://glad432.github.io"]}})
 
 MAX_INPUT_SIZE_KB = 420
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
     if request.method == "GET":
         return render_template("out.html")
