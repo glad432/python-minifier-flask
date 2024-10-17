@@ -10,7 +10,7 @@ MAX_INPUT_SIZE_KB = 420
 
 @app.route("/", methods=["GET"])
 def index() -> str:
-    return render_template("index.html")
+    return render_template("out.html")
 
 @app.route("/minify", methods=["POST"])
 def minify_post() -> Any:
